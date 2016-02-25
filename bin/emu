@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+./Sdk/tools/emulator -avd cars -qemu -m 1536 -enable-kvm
