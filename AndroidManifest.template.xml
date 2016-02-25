@@ -19,7 +19,7 @@
       </intent-filter>
     </activity>
     <activity android:name=".MainActivity"
-              android:theme="@android:style/Theme.Translucent.NoTitleBar">
+              android:theme="@android:style/Theme.Holo.Light">
       <intent-filter>
         <action android:name='com.tddfellow.carshare.MAIN'/>
         <category android:name='android.intent.category.DEFAULT'/>
