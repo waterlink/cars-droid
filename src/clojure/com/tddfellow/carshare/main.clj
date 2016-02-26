@@ -4,12 +4,17 @@
               [neko.notify :refer [toast]]
               [neko.resource :as res]
               [neko.find-view :refer [find-view]]
-              [neko.threading :refer [on-ui]])
+              [neko.threading :refer [on-ui]]
+              [neko.ui.mapping :refer [defelement]])
     (:import android.widget.EditText))
 
 ;; We execute this function to import all subclasses of R class. This gives us
 ;; access to all application resources.
 (res/import-all)
+
+(defelement :std-button
+  :inherits :button
+  :attributes {})
 
 (defn notify-from-edit
   "Finds an EditText element with ID ::user-input in the given activity. Gets
@@ -22,6 +27,24 @@
              (res/get-string R$string/your_input_fmt input))
            :long)))
 
+(defn main-layout [activity]
+  [:linear-layout {:orientation :vertical
+                   :layout-width :fill
+                   :layout-height :wrap}
+
+   [:edit-text {:id ::user-input
+                :hint "Type the text here"
+                :layout-width :fill}]
+
+   [:std-button {:text "Hello world we will send every text you type to our database!" ;; We use resource here, but could
+             ;; have used a plain string too.
+              :layout-width :wrap-content
+              :layout-height :wrap-content
+              :background-resource R$drawable/shinybutton
+             :on-click (fn [_] (notify-from-edit activity))}]])
+
+(str R$drawable/shinybutton)
+
 ;; This is how an Activity is defined. We create one and specify its onCreate
 ;; method. Inside we create a user interface that consists of an edit and a
 ;; button. We also give set callback to the button.
@@ -31,14 +54,7 @@
   (onCreate [this bundle]
     (.superOnCreate this bundle)
     (neko.debug/keep-screen-on this)
+
+    ;; eval to do a live update update
     (on-ui
-      (set-content-view! (*a)
-        [:linear-layout {:orientation :vertical
-                         :layout-width :fill
-                         :layout-height :wrap}
-         [:edit-text {:id ::user-input
-                      :hint "Type text here"
-                      :layout-width :fill}]
-         [:button {:text R$string/touch_me ;; We use resource here, but could
-                                           ;; have used a plain string too.
-                   :on-click (fn [_] (notify-from-edit (*a)))}]]))))
+      (set-content-view! (*a) (main-layout (*a))))))
