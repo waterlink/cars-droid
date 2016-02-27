@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+  <style name="GenericTheme" parent="@android:style/Theme.Holo.Light">
+  </style>
+
+  <style name="GenericTheme.NoTitle">
+    <item name="android:windowNoTitle">true</item>
+  </style>
+
+</resources>
