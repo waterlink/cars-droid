@@ -63,17 +63,28 @@
 
 (def link-color (android.graphics.Color/rgb 0x00 0x00 0x99))
 
+(defn link-view [opts on-click]
+  (text-view (merge {:text-color link-color
+                     :on-click (fn [_] (on-click))}
+                    opts)))
+
+(defn link-with-tooltip [opts on-click tooltip tooltip-opts]
+  (-layout :vertical
+           {:layout-width :wrap}
+           [(link-view (merge {:padding-bottom 0}
+                              opts)
+                       on-click)
+            (text-view (merge {:text tooltip
+                               :text-size 8
+                               :padding-top 0}
+                              tooltip-opts))]))
+
 (defn car-description [car {:keys [:on-click]}]
   (let [{:keys [:description]} car]
-    (-layout :vertical
-             {:layout-width :wrap}
-             [(text-view {:text description
-                          :text-color link-color
-                          :padding-bottom 0
-                          :on-click (fn [_] (on-click car))})
-              (text-view {:text "(click to open in maps)"
-                          :text-size 8
-                          :padding-top 0})])))
+    (link-with-tooltip {:text description}
+                       #(on-click car)
+                       "(click to open in maps)"
+                       {})))
 
 (defn car-latitude [{:keys [:latitude]}]
   (text-view {:text (str latitude)
