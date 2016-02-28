@@ -18,7 +18,9 @@
   :inherits :button
   :attributes {})
 
-(def cars (atom [
+(def cars (atom []))
+
+(def cars-stub [
                  {:description "West Ealing - Hartington Rd"
                   :latitude 51.511318
                   :longitude -0.318178}
@@ -30,18 +32,16 @@
                  {:description "West Ealing - St Leonard’s Rd"
                   :latitude 51.512107
                   :longitude -0.313599}
-                 ]))
+                ])
 
-(defn notify-from-edit
-  "Finds an EditText element with ID ::user-input in the given activity. Gets
-  its contents and displays them in a toast if they aren't empty. We use
-  resources declared in res/values/strings.xml."
+(defn render-view [activity]
+  (on-ui
+    (set-content-view! activity (main-layout activity))))
+
+(defn reload-cars
   [activity]
-  (let [^EditText input (.getText (find-view activity ::user-input))]
-    (toast (if (empty? input)
-             (res/get-string R$string/input_is_empty)
-             (res/get-string R$string/your_input_fmt input))
-           :long)))
+  (reset! cars cars-stub)
+  (render-view activity))
 
 (defn -layout [kind opts elems]
   (into
@@ -130,7 +130,7 @@
     [:std-button {:text "Reload"
                   :layout-width :wrap-content
                   :layout-height :wrap-content
-                  :on-click (fn [_] (notify-from-edit activity))}]))
+                  :on-click (fn [_] (reload-cars activity))}]))
 
 ;; This is how an Activity is defined. We create one and specify its onCreate
 ;; method. Inside we create a user interface that consists of an edit and a
@@ -143,9 +143,7 @@
             (neko.debug/keep-screen-on this)
 
             ;; eval to do a live update update
-            (on-ui
-              (set-content-view! (*a) (main-layout (*a))))))
+            (render-view (*a))))
 
 (defn- -dev-update-ui []
-  (on-ui
-    (set-content-view! (*a) (main-layout (*a)))))
+  (render-view (*a)))
