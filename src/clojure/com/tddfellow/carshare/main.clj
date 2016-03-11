@@ -23,15 +23,18 @@
 (def cars-stub [
                  {:description "West Ealing - Hartington Rd"
                   :latitude 51.511318
-                  :longitude -0.318178}
+                  :longitude -0.318178,
+                  :distance "3.5 kms"}
 
                  {:description "Sudbury - Williams Way"
                   :latitude 51.553667
-                  :longitude -0.315159}
+                  :longitude -0.315159
+                  :distance "3.6 kms"}
 
                  {:description "West Ealing - St Leonard’s Rd"
                   :latitude 51.512107
-                  :longitude -0.313599}
+                  :longitude -0.313599
+                  :distance "5.0 kms"}
                 ])
 
 (defn render-view [activity]
@@ -79,12 +82,18 @@
                                :padding-top 0}
                               tooltip-opts))]))
 
+(defn car-distance [{:keys [:distance]}]
+  (text-view {:text (str distance)}))
+
 (defn car-description [car {:keys [:on-click]}]
   (let [{:keys [:description]} car]
-    (link-with-tooltip {:text description}
-                       #(on-click car)
-                       "(click to open in maps)"
-                       {})))
+    (-layout :vertical
+             {:layout-width :wrap}
+             [(link-with-tooltip {:text description}
+                                 #(on-click car)
+                                 "(click to open in maps)"
+                                 {})
+              (car-distance car)])))
 
 (defn car-latitude [{:keys [:latitude]}]
   (text-view {:text (str latitude)
