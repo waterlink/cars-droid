@@ -3,12 +3,19 @@
             [neko.debug :refer [*a]]
             [neko.notify :refer [toast]]
             [neko.resource :as res]
+            [neko.log :as log]
             [neko.find-view :refer [find-view]]
             [neko.threading :refer [on-ui]]
-            [neko.ui.mapping :refer [defelement]])
+            [neko.ui.mapping :refer [defelement]]
+            [clojure.data.json :as json])
   (:import android.widget.EditText)
   (:import android.content.Intent)
-  (:import android.net.Uri))
+  (:import android.net.Uri)
+  (:import java.net.URL)
+  (:import java.net.HttpURLConnection)
+  (:import java.io.InputStream)
+  (:import java.io.BufferedInputStream)
+  (:import java.util.Scanner))
 
 ;; We execute this function to import all subclasses of R class. This gives us
 ;; access to all application resources.
@@ -18,7 +25,11 @@
   :inherits :button
   :attributes {})
 
-(def cars (atom []))
+(def cars (agent []))
+(def cars-renderer (agent nil))
+
+(def api-endpoint (atom ""))
+(def current-location (atom ""))
 
 (def cars-stub [
                  {:description "West Ealing - Hartington Rd"
@@ -37,14 +48,43 @@
                   :distance "5.0 kms"}
                 ])
 
+(declare main-layout)
+
 (defn render-view [activity]
   (on-ui
     (set-content-view! activity (main-layout activity))))
 
+(defn fetch-cars [activity _]
+  (let [url (new URL (str
+                       @api-endpoint
+                       "/cars?location="
+                       @current-location
+                       "&units=kms&limit=4"))
+        ^HttpURLConnection connection (.openConnection url)]
+
+    (try
+      (let [^InputStream stream (new BufferedInputStream (.getInputStream connection))
+            scanner (.useDelimiter (new Scanner stream "UTF-8") "\\A")
+            raw (if (.hasNext scanner) (.next scanner) "{}")
+            data (json/read-str raw :key-fn keyword)
+            cars (get data :cars [])]
+        (send-off cars-renderer
+                  (fn [_] (render-view activity) nil))
+        cars)
+
+      (finally (.disconnect connection)))))
+
+(defn grab-text [activity id]
+  (str (.getText (find-view activity id))))
+
+(defn view-to-atom [activity id x]
+  (reset! x (grab-text activity id)))
+
 (defn reload-cars
   [activity]
-  (reset! cars cars-stub)
-  (render-view activity))
+  (view-to-atom activity ::api-endpoint api-endpoint)
+  (view-to-atom activity ::current-location current-location)
+  (send-off cars (partial fetch-cars activity)))
 
 (defn -layout [kind opts elems]
   (into
@@ -64,10 +104,10 @@
   [:text-view (merge {:padding 10}
                      opts)])
 
-(def link-color (android.graphics.Color/rgb 0x00 0x00 0x99))
+(defn link-color [] (android.graphics.Color/rgb 0x00 0x00 0x99))
 
 (defn link-view [opts on-click]
-  (text-view (merge {:text-color link-color
+  (text-view (merge {:text-color (link-color)
                      :on-click (fn [_] (on-click))}
                     opts)))
 
@@ -135,6 +175,14 @@
     (apply vertical-layout
            (car-list @cars
                      {:on-click (partial open-car activity)}))
+
+    [:edit-text {:id ::api-endpoint
+                 :text @api-endpoint
+                 :hint "API endpoint (e.g.: http://example.org:4567)"}]
+
+    [:edit-text {:id ::current-location
+                 :text @current-location
+                 :hint "lat,long"}]
 
     [:std-button {:text "Reload"
                   :layout-width :wrap-content

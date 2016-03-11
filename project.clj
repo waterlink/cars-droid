@@ -12,7 +12,8 @@
   :plugins [[lein-droid "0.4.3"]]
 
   :dependencies [[org.clojure-android/clojure "1.7.0-r2"]
-                 [neko/neko "4.0.0-alpha5"]]
+                 [neko/neko "4.0.0-alpha5"]
+                 [org.clojure/data.json "0.2.6"]]
   :profiles {:default [:dev]
 
              :dev
