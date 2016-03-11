@@ -8,9 +8,14 @@
             [neko.threading :refer [on-ui]]
             [neko.ui.mapping :refer [defelement]]
             [clojure.data.json :as json])
+
   (:import android.widget.EditText)
   (:import android.content.Intent)
   (:import android.net.Uri)
+  (:import android.location.LocationListener)
+  (:import android.location.LocationManager)
+  (:import android.content.Context)
+
   (:import java.net.URL)
   (:import java.net.HttpURLConnection)
   (:import java.io.InputStream)
@@ -29,7 +34,7 @@
 (def cars-renderer (agent nil))
 
 (def api-endpoint (atom ""))
-(def current-location (atom ""))
+(def current-location (atom "0,0"))
 
 (def cars-stub [
                  {:description "West Ealing - Hartington Rd"
@@ -49,6 +54,21 @@
                 ])
 
 (declare main-layout)
+
+(def location-listener
+  (reify LocationListener
+    (onLocationChanged [this location]
+      (let [latitude (.getLatitude location)
+            longitude (.getLongitude location)
+            latlong (str latitude "," longitude)]
+        (log/i (str "received location update:" latlong))
+        (reset! current-location latlong)))
+
+    (onStatusChanged [this provider status extras] nil)
+
+    (onProviderEnabled [this provider] nil)
+
+    (onProviderDisabled [this provider] nil)))
 
 (defn render-view [activity]
   (on-ui
@@ -83,7 +103,6 @@
 (defn reload-cars
   [activity]
   (view-to-atom activity ::api-endpoint api-endpoint)
-  (view-to-atom activity ::current-location current-location)
   (send-off cars (partial fetch-cars activity)))
 
 (defn -layout [kind opts elems]
@@ -166,6 +185,16 @@
         intent (new Intent Intent/ACTION_VIEW uri)]
     (.startActivity activity intent)))
 
+(defn receive-location-updates [activity]
+  (let [^LocationManager location-manager (.getSystemService activity Context/LOCATION_SERVICE)
+        ^LocationListener listener location-listener]
+    (.requestLocationUpdates
+      location-manager
+      LocationManager/GPS_PROVIDER
+      0
+      0.0
+      listener)))
+
 (defn main-layout [activity]
   (vertical-layout
 
@@ -179,10 +208,6 @@
     [:edit-text {:id ::api-endpoint
                  :text @api-endpoint
                  :hint "API endpoint (e.g.: http://example.org:4567)"}]
-
-    [:edit-text {:id ::current-location
-                 :text @current-location
-                 :hint "lat,long"}]
 
     [:std-button {:text "Reload"
                   :layout-width :wrap-content
@@ -198,6 +223,7 @@
   (onCreate [this bundle]
             (.superOnCreate this bundle)
             (neko.debug/keep-screen-on this)
+            (receive-location-updates this)
 
             ;; eval to do a live update update
             (render-view (*a))))
